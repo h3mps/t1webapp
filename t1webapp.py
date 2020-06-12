@@ -36,5 +36,7 @@ data = data[mask_quintiles]
 fig = px.line(data, x="year", y="binshr", color='quintile', line_dash='item', template="simple_white", title='Line Item Quintile Shares in ' + PROVS_SELECTED)
 fig.update_xaxes(title_text='Year')
 fig.update_yaxes(title_text='Share of Total')
+fig.update_layout(legend=dict(x=0, y=-0.5))
+fig.update_layout(legend_title_text='Quintile, Item')
 
 st.plotly_chart(fig, use_container_width=True)
