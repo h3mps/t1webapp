@@ -26,14 +26,14 @@ ITEMS_SELECTED = st.multiselect('Select Items', ITEMS, default=["Total Income As
 mask_items = data['item'].isin(ITEMS_SELECTED)
 data = data[mask_items]
 
-# Quintiles
-QUINTILES = list(data['quintile'].unique())
-QUINTILES_SELECTED = st.multiselect('Select Quintile', QUINTILES, default=[5])
-mask_quintiles = data['quintile'].isin(QUINTILES_SELECTED)
-data = data[mask_quintiles]
+# Vingtiles
+PCE = list(data['pce'].unique())
+PCES_SELECTED = st.multiselect('Select Vingtile', PCE, default=[99])
+mask_pce = data['pce'].isin(PCES_SELECTED)
+data = data[mask_pce]
 
 # Create Figure
-fig = px.line(data, x="year", y="binshr", color='quintile', line_dash='item', template="simple_white", title='Line Item Quintile Shares in ' + PROVS_SELECTED)
+fig = px.line(data, x="year", y="binshr", color='pce', line_dash='item', template="simple_white", title='Vingtile Shares in ' + PROVS_SELECTED)
 fig.update_xaxes(title_text='Year')
 fig.update_yaxes(title_text='Share of Total')
 fig.update_layout(legend=dict(x=0, y=-1))
