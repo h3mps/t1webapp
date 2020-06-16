@@ -33,10 +33,19 @@ mask_pce = data['pce'].isin(PCES_SELECTED)
 data = data[mask_pce]
 
 # Create Figure
-fig = px.line(data, x="year", y="binshr", color='pce', line_dash='item', template="simple_white", title='Vingtile Shares in ' + PROVS_SELECTED)
+fig = px.line(data, x="year", y="binshr", color_discrete_sequence=px.colors.qualitative.Set1, color='pce', line_dash='item', template="simple_white", title='Vingtile Shares in ' + PROVS_SELECTED)
 fig.update_xaxes(title_text='Year')
 fig.update_yaxes(title_text='Share of Total')
 fig.update_layout(legend=dict(x=0, y=-1))
 fig.update_layout(legend_title_text='')
+
+fig.layout.images = [dict(
+        source="https://raw.githubusercontent.com/h3mps/t1webapp/master/fon-icon.png",
+        xref="paper", yref="paper",
+        x=0.8, y=-1,
+        sizex=0.4, sizey=0.4,
+        xanchor="center", yanchor="bottom"
+      )]
+
 
 st.plotly_chart(fig, use_container_width=True)
