@@ -16,24 +16,36 @@ df = pd.read_csv("https://raw.githubusercontent.com/h3mps/t1webapp/master/t1-tes
 # Retrieve User Input and Filter Data
 # Provinces
 PROVS = list(df['provname'].unique())
-PROVS_SELECTED = st.selectbox('Select Province', PROVS, index=1)
+PROVS_SELECTED = st.sidebar.selectbox('Select Province', PROVS, index=1)
 mask_provs = df['provname'].isin([PROVS_SELECTED])
 data = df[mask_provs]
 
 # Items
 ITEMS = list(data['item'].unique())
-ITEMS_SELECTED = st.multiselect('Select Items', ITEMS, default=["Total Income Assessed"])
+ITEMS_SELECTED = st.sidebar.multiselect('Select Items', ITEMS, default=["Total Income Assessed"])
 mask_items = data['item'].isin(ITEMS_SELECTED)
 data = data[mask_items]
 
 # Vingtiles
 PCE = list(data['pce'].unique())
-PCES_SELECTED = st.multiselect('Select Vingtile', PCE, default=[99])
+PCES_SELECTED = st.sidebar.multiselect('Select Vingtile', PCE, default=[99])
 mask_pce = data['pce'].isin(PCES_SELECTED)
 data = data[mask_pce]
 
+# Key Variable
+yvar = st.sidebar.radio(
+        "What Variable?",
+        ('Share of Total', 'Implied Dollars'))
+
+if yvar == 'Share of Total':
+        yvarg = "binshr"
+if yvar == 'Implied Dollars':
+        yvarg = "implrealdol"
+
+print(yvarg)
+
 # Create Figure
-fig = px.line(data, x="year", y="binshr", color_discrete_sequence=px.colors.qualitative.Set1, color='pce', line_dash='item', template="simple_white", title='Vingtile Shares in ' + PROVS_SELECTED)
+fig = px.line(data, x="year", y=yvarg, color_discrete_sequence=px.colors.qualitative.Set1, color='pce', line_dash='item', template="simple_white", title='Vingtile Shares in ' + PROVS_SELECTED)
 fig.update_xaxes(title_text='Year')
 fig.update_yaxes(title_text='Share of Total')
 fig.update_layout(legend=dict(x=0, y=-1))
