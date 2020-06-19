@@ -5,10 +5,10 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 
-st.title('T1 Final Income Statistics')
-st.write('This tool allows users to visualize data on Canadian tax return data created by the Finances of the Nation \
-project. Use the widgets below to choose which provinces, items and quintiles you would like to graph. Graphs can \
-be download as .png files. ')
+## st.title('T1 Final Income Statistics')
+## st.write('This tool allows users to visualize data on Canadian tax return data created by the Finances of the Nation \
+## project. Use the widgets below to choose which provinces, items and quintiles you would like to graph. Graphs can \
+## be download as .png files. ')
 
 # Read Data
 df = pd.read_csv("https://raw.githubusercontent.com/h3mps/t1webapp/master/t1-testfile.csv")
@@ -42,19 +42,22 @@ if yvar == 'Share of Total':
 if yvar == 'Implied Dollars':
         yvarg = "implrealdol"
 
-print(yvarg)
-
 # Create Figure
 fig = px.line(data, x="year", y=yvarg, color_discrete_sequence=px.colors.qualitative.Set1, color='pce', line_dash='item', template="simple_white", title='Vingtile Shares in ' + PROVS_SELECTED)
 fig.update_xaxes(title_text='Year')
 fig.update_yaxes(title_text='Share of Total')
-fig.update_layout(legend=dict(x=0, y=-1))
-fig.update_layout(legend_title_text='')
+fig.update_layout(
+        legend_title_text='',
+        height=800,
+        yaxis=dict(rangemode = 'tozero', showgrid=True, zeroline=True),
+        xaxis=dict(showgrid=True, zeroline=True),
+        legend=dict(x=0, y=-0.35)
+)
 
 fig.layout.images = [dict(
         source="https://raw.githubusercontent.com/h3mps/t1webapp/master/fon-icon.png",
         xref="paper", yref="paper",
-        x=0.8, y=-1,
+        x=0.8, y=-0.35,
         sizex=0.4, sizey=0.4,
         xanchor="center", yanchor="bottom"
       )]
