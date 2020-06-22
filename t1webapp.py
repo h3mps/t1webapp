@@ -4,63 +4,157 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
-## st.title('T1 Final Income Statistics')
+st.title('T1 Final Income Statistics')
+
+
 ## st.write('This tool allows users to visualize data on Canadian tax return data created by the Finances of the Nation \
 ## project. Use the widgets below to choose which provinces, items and quintiles you would like to graph. Graphs can \
 ## be download as .png files. ')
 
 # Read Data
-df = pd.read_csv("https://raw.githubusercontent.com/h3mps/t1webapp/master/t1-testfile.csv")
+@st.cache
+def importdata():
+    return pd.read_csv("https://raw.githubusercontent.com/h3mps/t1webapp/master/t1-fon-data.csv")
+
+
+df = importdata()
 
 # Retrieve User Input and Filter Data
-# Provinces
-PROVS = list(df['provname'].unique())
-PROVS_SELECTED = st.sidebar.selectbox('Select Province', PROVS, index=1)
-mask_provs = df['provname'].isin([PROVS_SELECTED])
-data = df[mask_provs]
-
+# Centered-Mandatory Input
 # Items
-ITEMS = list(data['item'].unique())
-ITEMS_SELECTED = st.sidebar.multiselect('Select Items', ITEMS, default=["Total Income Assessed"])
-mask_items = data['item'].isin(ITEMS_SELECTED)
-data = data[mask_items]
+ITEMS = list(df['item'].unique())
+DEFIND = ITEMS.index("Total Income Assessed")
+ITEM_SELECTED = st.selectbox('Select Item', ITEMS, index=DEFIND)
+mask_items = df['item'].isin([ITEM_SELECTED])
+data = df[mask_items]
 
-# Vingtiles
-PCE = list(data['pce'].unique())
-PCES_SELECTED = st.sidebar.multiselect('Select Vingtile', PCE, default=[99])
-mask_pce = data['pce'].isin(PCES_SELECTED)
-data = data[mask_pce]
+# Provinces
+PROVS = list(data['provname'].unique())
+PROVS_SELECTED = st.multiselect('Select Provinces', PROVS, default=["All Provinces"])
+mask_provs = data['provname'].isin(PROVS_SELECTED)
+data = data[mask_provs]
 
-# Key Variable
-yvar = st.sidebar.radio(
-        "What Variable?",
-        ('Share of Total', 'Implied Dollars'))
+UNIT = st.radio(
+    "What Variable?",
+    ('Share of Total', 'Dollars'))
 
-if yvar == 'Share of Total':
-        yvarg = "binshr"
-if yvar == 'Implied Dollars':
+# Optional Input
+# Common Measures
+st.sidebar.markdown('**Common Measures**')
+if UNIT == 'Share of Total':
+    TOP1SHR = st.sidebar.checkbox('Top 1% Share', value=True)
+    TOP10SHR = st.sidebar.checkbox('Top 10% Share')
+    BOT50SHR = st.sidebar.checkbox('Bottom 50% Share')
+if UNIT == 'Dollars':
+    GRDTOT = st.sidebar.checkbox('Grand Total', value=True)
+    TOP1DOL = st.sidebar.checkbox('Top 1% Dollars')
+    BOT50DOL = st.sidebar.checkbox('Bottom 50% Dollars')
+
+# Custom Lines
+st.sidebar.markdown('**Add Custom Lines**')
+# Function to Display the Submenu
+def submenu(data, i):
+    CUSTSHR = st.sidebar.radio(
+        "Bin Direction",
+        ('Bin', 'Above', 'Below'), key='linedirect' + i)
+    CUSTTYPE = st.sidebar.radio(
+        "Bin Type",
+        ('Vingtile', 'Quintile'), key='linetype' + i)
+    if CUSTTYPE == 'Vingtile':
+        bintype = "pce"
+        bindefault = 99
+    else:
+        bintype = "quintile"
+        bindefault = 5
+    data = data[data[bintype].notnull()]
+    BINS = list(data[bintype].unique())
+    bindefind = BINS.index(bindefault)
+    CUSTCUT = st.sidebar.selectbox('Select Bin', BINS, index=bindefind, key='lineselect' + i)
+    return CUSTSHR, CUSTTYPE, CUSTCUT
+
+
+# Display Submenus
+if st.sidebar.checkbox('Add Custom Line 1:'):
+    CUST1SHR, CUST1TYPE, CUST1CUT = submenu(data, '1')
+    LINE1 = True
+    if st.sidebar.checkbox('Add Custom Line 2:'):
+        CUST2SHR, CUST2TYPE, CUST2CUT = submenu(data, '2')
+        LINE2 = True
+        if st.sidebar.checkbox('Add Custom Line 3:'):
+            CUST3SHR, CUST3TYPE, CUST3CUT = submenu(data, '3')
+            LINE3 = True
+        else:
+            LINE3 = False
+    else:
+        LINE2 = False
+else:
+    LINE1 = False
+
+
+# Create Figure Function
+def addlines(fig, data, provs, unit, shr, type, cutoff, style):
+    # Name of bin type
+    if type == 'Vingtile':
+        blktype = "pce"
+    else:
+        blktype = "quintile"
+    # determine y variable to use
+    if unit == 'Share of Total':
+        if shr == 'Bin':
+            yvarg = "binshr"
+        if shr == 'Above':
+            yvarg = "ipoltshr"
+        if shr == 'Bottom':
+            yvarg = "ipolshr"
+    if unit == 'Dollars':
         yvarg = "implrealdol"
+    mask_cut = data[blktype].isin([cutoff])
+    dataa: object = data[mask_cut]
+    for p in provs:
+        datalp = dataa[dataa['provname'].isin([p])]
+        fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg],
+                                mode=style,
+                                name= p +', '+ shr + ' ' + str(cutoff) + ' ' + type))
+    return fig
+
+
+fig = go.Figure()
+if TOP1SHR == True :
+        fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bin', 'Vingtile', 99, 'lines')
+if TOP10SHR == True :
+        fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bin', 'Vingtile', 90, 'lines+markers')
+if BOT50SHR == True :
+        fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bin', 'Vingtile', 50, 'lines+markers')
+if LINE1 == True :
+        fig = addlines(fig, data, PROVS_SELECTED, UNIT, CUST1SHR, CUST1TYPE, CUST1CUT, 'lines+markers')
+        if LINE2 == True :
+                fig = addlines(fig, data, PROVS_SELECTED, UNIT, CUST2SHR, CUST2TYPE, CUST2CUT, 'lines+markers')
+                if LINE3 == True :
+                        fig = addlines(fig, data, PROVS_SELECTED, UNIT, CUST3SHR, CUST3TYPE, CUST3CUT, 'lines+markers')
 
 # Create Figure
-fig = px.line(data, x="year", y=yvarg, color_discrete_sequence=px.colors.qualitative.Set1, color='pce', line_dash='item', template="simple_white", title='Vingtile Shares in ' + PROVS_SELECTED)
+# fig = px.line(data, x="year", y=yvarg, color_discrete_sequence=px.colors.qualitative.Set1, color='provname',
+#             line_dash='pce', template="simple_white", title='Vingtile Shares in ' + ITEMS_SELECTED)
+
 fig.update_xaxes(title_text='Year')
-fig.update_yaxes(title_text='Share of Total')
+fig.update_yaxes(title_text=UNIT)
 fig.update_layout(
-        legend_title_text='',
-        height=800,
-        yaxis=dict(rangemode = 'tozero', showgrid=True, zeroline=True),
-        xaxis=dict(showgrid=True, zeroline=True),
-        legend=dict(x=0, y=-0.35)
+    template = "simple_white",
+    legend_title_text='',
+    height=800,
+    yaxis=dict(rangemode='tozero', showgrid=True, zeroline=True),
+    xaxis=dict(showgrid=True, zeroline=True),
+    legend=dict(x=0, y=-0.35)
 )
 
 fig.layout.images = [dict(
-        source="https://raw.githubusercontent.com/h3mps/t1webapp/master/fon-icon.png",
-        xref="paper", yref="paper",
-        x=0.8, y=-0.35,
-        sizex=0.4, sizey=0.4,
-        xanchor="center", yanchor="bottom"
-      )]
-
+    source="https://raw.githubusercontent.com/h3mps/t1webapp/master/fon-icon.png",
+    xref="paper", yref="paper",
+    x=0.8, y=-0.35,
+    sizex=0.4, sizey=0.4,
+    xanchor="center", yanchor="bottom"
+)]
 
 st.plotly_chart(fig, use_container_width=True)
