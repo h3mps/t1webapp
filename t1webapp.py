@@ -32,6 +32,7 @@ data = df[mask_items]
 
 # Provinces
 PROVS = list(data['provname'].unique())
+PROVABBS = list(data['provabb'].unique())
 PROVS_SELECTED = st.multiselect('Select Provinces', PROVS, default=["All Provinces"])
 mask_provs = data['provname'].isin(PROVS_SELECTED)
 data = data[mask_provs]
@@ -126,31 +127,32 @@ def addlines(fig, data, provs, unit, shr, type, cutoff, provlist, provcollist, m
         colindx = provlist.index(p)
         provcol = provcollist[colindx]
         provfontcol = provfontlist[colindx]
+        provabb = PROVABBS[colindx]
         datalp = dataa[dataa['provname'].isin([p])]
         if unit == 'Share of Item Total':
             if marker == "None" :
                 fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines',
                                          line=dict(color=provcol, dash=dash, width=2),
-                                         customdata=datalp[['provname', blktype]], name=p + ', ' + shr + ' ' + str(cutoff) + ' ' + type,
+                                         customdata=datalp[['provname', blktype]], name=provabb + ', ' + shr + ' ' + str(cutoff) + ' ' + type,
                                          hovertemplate="Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + unit + ": %{y:.4p} <extra></extra>",
                                          hoverlabel=dict(font_color=provfontcol)))
             if marker != "None" :
                 fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines+markers',
                                      line=dict(color=provcol, width=1), marker=dict(symbol=marker, size=8),
-                                     customdata=datalp[['provname', blktype]], name= p +', '+ shr + ' ' + str(cutoff) + ' ' + type,
+                                     customdata=datalp[['provname', blktype]], name= provabb +', '+ shr + ' ' + str(cutoff) + ' ' + type,
                                      hovertemplate = "Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + unit +": %{y:.4p} <extra></extra>",
                                      hoverlabel=dict(font_color=provfontcol)))
         if unit == 'Total Dollars':
             if marker == "None" :
                 fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines',
                                          line=dict(color=provcol, dash=dash, width=2),
-                                         customdata=datalp[['provname', blktype]], name=p + ', ' + shr + ' ' + str(cutoff) + ' ' + type,
+                                         customdata=datalp[['provname', blktype]], name=provabb + ', ' + shr + ' ' + str(cutoff) + ' ' + type,
                                          hovertemplate="Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + unit + ": %{y} <extra></extra>",
                                          hoverlabel=dict(font_color=provfontcol)))
             if marker != "None" :
                 fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines+markers',
                                      line=dict(color=provcol, width=1), marker=dict(symbol=marker, size=8),
-                                     customdata=datalp[['provname', blktype]], name= p +', '+ shr + ' ' + str(cutoff) + ' ' + type,
+                                     customdata=datalp[['provname', blktype]], name= provabb +', '+ shr + ' ' + str(cutoff) + ' ' + type,
                                      hovertemplate = "Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + unit +": %{y} <extra></extra>",
                                      hoverlabel=dict(font_color=provfontcol)))
     return fig
@@ -193,9 +195,10 @@ fig.update_layout(
     template = "simple_white",
     legend_title_text='',
     height=600,
-    width=1000,
+    width=800,
     yaxis=dict(rangemode='tozero', showgrid=True, zeroline=True),
     xaxis=dict(showgrid=True),
+    showlegend=True,
     legend=dict(x=1, y=0.5),
     hoverlabel=dict(
         font_size=14,
@@ -206,7 +209,7 @@ fig.layout.images = [dict(
     source="https://raw.githubusercontent.com/h3mps/t1webapp/master/fon-icon.png",
     xref="paper", yref="paper",
     x=1, y=0,
-    sizex=0.4, sizey=0.4,
+    sizex=0.25, sizey=0.25,
     xanchor="left", yanchor="bottom"
 )]
 
