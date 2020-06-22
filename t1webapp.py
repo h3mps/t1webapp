@@ -36,18 +36,18 @@ PROVS_SELECTED = st.multiselect('Select Provinces', PROVS, default=["All Provinc
 mask_provs = data['provname'].isin(PROVS_SELECTED)
 data = data[mask_provs]
 
-UNIT = st.radio(
-    "What Variable?",
-    ('Share of Total', 'Dollars'))
+UNIT = st.sidebar.radio(
+    'Variable of Interest',
+    ('Share of Item Total', 'Total Dollars'))
 
 # Optional Input
 # Common Measures
 st.sidebar.markdown('**Common Measures**')
-if UNIT == 'Share of Total':
+if UNIT == 'Share of Item Total':
     TOP1SHR = st.sidebar.checkbox('Top 1% Share', value=True)
     TOP10SHR = st.sidebar.checkbox('Top 10% Share')
     BOT50SHR = st.sidebar.checkbox('Bottom 50% Share')
-if UNIT == 'Dollars':
+if UNIT == 'Total Dollars':
     GRDTOT = st.sidebar.checkbox('Grand Total', value=True)
     TOP1DOL = st.sidebar.checkbox('Top 1% Dollars')
     BOT50DOL = st.sidebar.checkbox('Bottom 50% Dollars')
@@ -58,7 +58,7 @@ st.sidebar.markdown('**Add Custom Lines**')
 def submenu(data, i):
     CUSTSHR = st.sidebar.radio(
         "Bin Direction",
-        ('Bin', 'Above', 'Bottom'), key='linedirect' + i)
+        ('Bin', 'Above', 'Below'), key='linedirect' + i)
     CUSTTYPE = st.sidebar.radio(
         "Bin Type",
         ('Vingtile', 'Quintile'), key='linetype' + i)
@@ -70,6 +70,7 @@ def submenu(data, i):
         bindefault = 5
     data = data[data[bintype].notnull()]
     BINS = list(data[bintype].unique())
+    BINS = [int(x) for x in BINS]
     bindefind = BINS.index(bindefault)
     CUSTCUT = st.sidebar.selectbox('Select Bin', BINS, index=bindefind, key='lineselect' + i)
     return CUSTSHR, CUSTTYPE, CUSTCUT
@@ -93,10 +94,10 @@ else:
     LINE1 = False
 
 # Province Color Scheme
-provcollist = ['red', 'blue', 'green', 'purple', 'orange', 'cyan', 'maroon', 'lightpink', 'lavender', 'black', 'grey']
+provcollist = ['olive', 'coral', 'lightseagreen', 'gold', 'magenta', 'slategray', 'dodgerblue', 'crimson', 'lightsalmon', 'midnightblue', 'goldenrod']
 
 # Create Figure Function
-def addlines(fig, data, provs, unit, shr, type, cutoff, provcollist, marker, dash):
+def addlines(fig, data, provs, unit, shr, type, cutoff, provlist, provcollist, marker, dash):
     # Name of bin type
     global yvarg
     if type == 'Vingtile':
@@ -104,73 +105,76 @@ def addlines(fig, data, provs, unit, shr, type, cutoff, provcollist, marker, das
     else:
         blktype = "quintile"
     # determine y variable to use
-    if unit == 'Share of Total':
+    if unit == 'Share of Item Total':
         if shr == 'Bin':
             yvarg = "binshr"
         if shr == 'Above':
             yvarg = "ipoltshr"
-        if shr == 'Bottom':
+        if shr == 'Below':
             yvarg = "ipolshr"
-    if unit == 'Dollars':
+    if unit == 'Total Dollars':
         if shr == 'Bin':
             yvarg = "implrealbindol"
         if shr == 'Above':
             yvarg = "implrealtshrdol"
-        if shr == 'Bottom':
+        if shr == 'Below':
             yvarg = "implrealshrdol"
     mask_cut = data[blktype].isin([cutoff])
     dataa: object = data[mask_cut]
     for p in provs:
-        colindx = provs.index(p)
+        colindx = provlist.index(p)
         provcol = provcollist[colindx]
         datalp = dataa[dataa['provname'].isin([p])]
         if marker == "None" :
             fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines',
-                                     line=dict(color=provcol, dash=dash),
+                                     line=dict(color=provcol, dash=dash, width=2),
                                      name=p + ', ' + shr + ' ' + str(cutoff) + ' ' + type))
         if marker != "None" :
             fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines+markers',
-                                 line=dict(color=provcol, width=1), marker=dict(symbol=marker, size=10),
+                                 line=dict(color=provcol, width=1), marker=dict(symbol=marker, size=8),
                                 name= p +', '+ shr + ' ' + str(cutoff) + ' ' + type))
     return fig
 
 
 fig = go.Figure()
-if UNIT == 'Share of Total':
+if UNIT == 'Share of Item Total':
     if TOP1SHR == True :
-            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bin', 'Vingtile', 99, provcollist, "None", "dash")
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bin', 'Vingtile', 99, PROVS, provcollist, "circle-open", "solid")
     if TOP10SHR == True :
-            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Above', 'Vingtile', 90, provcollist, "None", "dot")
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Above', 'Vingtile', 90, PROVS, provcollist, "hexagram", "solid")
     if BOT50SHR == True :
-            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bottom', 'Vingtile', 50, provcollist, "None", "dashdot")
-if UNIT == 'Dollars' :
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Below', 'Vingtile', 50, PROVS, provcollist, "bowtie", "solid")
+if UNIT == 'Total Dollars' :
     if GRDTOT == True :
-            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Above', 'Vingtile', 0, provcollist, "None", "dash")
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Above', 'Vingtile', 0, PROVS, provcollist, "circle-open", "solid")
     if TOP1DOL == True :
-            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Above', 'Vingtile', 90, provcollist, "None", "dot")
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Above', 'Vingtile', 90, PROVS, provcollist, "hexagram", "solid")
     if BOT50DOL == True :
-            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bottom', 'Vingtile', 50, provcollist, "None", "dashdot")
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Below', 'Vingtile', 50, PROVS, provcollist, "bowtie", "solid")
 
 if LINE1 == True :
-        fig = addlines(fig, data, PROVS_SELECTED, UNIT, CUST1SHR, CUST1TYPE, CUST1CUT, provcollist, "circle-open", "solid")
+        fig = addlines(fig, data, PROVS_SELECTED, UNIT, CUST1SHR, CUST1TYPE, CUST1CUT, PROVS, provcollist, "None", "dash")
         if LINE2 == True :
-                fig = addlines(fig, data, PROVS_SELECTED, UNIT, CUST2SHR, CUST2TYPE, CUST2CUT, provcollist, "hexagram", "solid")
+                fig = addlines(fig, data, PROVS_SELECTED, UNIT, CUST2SHR, CUST2TYPE, CUST2CUT, PROVS, provcollist, "None", "dot")
                 if LINE3 == True :
-                        fig = addlines(fig, data, PROVS_SELECTED, UNIT, CUST3SHR, CUST3TYPE, CUST3CUT, provcollist, "bowtie", "solid")
+                        fig = addlines(fig, data, PROVS_SELECTED, UNIT, CUST3SHR, CUST3TYPE, CUST3CUT, PROVS, provcollist, "None", "dashdot")
 
 # Create Figure
 # fig = px.line(data, x="year", y=yvarg, color_discrete_sequence=px.colors.qualitative.Set1, color='provname',
 #             line_dash='pce', template="simple_white", title='Vingtile Shares in ' + ITEMS_SELECTED)
 
 fig.update_xaxes(title_text='Year')
-fig.update_yaxes(title_text=UNIT)
+if UNIT == 'Share of Item Total' :
+    fig.update_yaxes(title_text=UNIT)
+if UNIT == 'Total Dollars' :
+    fig.update_yaxes(title_text=UNIT + ' (infl. adj.)')
 fig.update_layout(
     title = ITEM_SELECTED + ': ' + UNIT + ' For A Certain Percentile Threshold',
     template = "simple_white",
     legend_title_text='',
     height=800,
     yaxis=dict(rangemode='tozero', showgrid=True, zeroline=True),
-    xaxis=dict(showgrid=True, zeroline=True),
+    xaxis=dict(showgrid=True),
     legend=dict(x=0, y=-0.35)
 )
 
