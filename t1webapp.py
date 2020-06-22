@@ -58,7 +58,7 @@ st.sidebar.markdown('**Add Custom Lines**')
 def submenu(data, i):
     CUSTSHR = st.sidebar.radio(
         "Bin Direction",
-        ('Bin', 'Above', 'Below'), key='linedirect' + i)
+        ('Bin', 'Above', 'Bottom'), key='linedirect' + i)
     CUSTTYPE = st.sidebar.radio(
         "Bin Type",
         ('Vingtile', 'Quintile'), key='linetype' + i)
@@ -96,6 +96,7 @@ else:
 # Create Figure Function
 def addlines(fig, data, provs, unit, shr, type, cutoff, style):
     # Name of bin type
+    global yvarg
     if type == 'Vingtile':
         blktype = "pce"
     else:
@@ -109,7 +110,12 @@ def addlines(fig, data, provs, unit, shr, type, cutoff, style):
         if shr == 'Bottom':
             yvarg = "ipolshr"
     if unit == 'Dollars':
-        yvarg = "implrealdol"
+        if shr == 'Bin':
+            yvarg = "implrealbindol"
+        if shr == 'Above':
+            yvarg = "implrealtshrdol"
+        if shr == 'Bottom':
+            yvarg = "implrealshrdol"
     mask_cut = data[blktype].isin([cutoff])
     dataa: object = data[mask_cut]
     for p in provs:
@@ -121,12 +127,21 @@ def addlines(fig, data, provs, unit, shr, type, cutoff, style):
 
 
 fig = go.Figure()
-if TOP1SHR == True :
-        fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bin', 'Vingtile', 99, 'lines')
-if TOP10SHR == True :
-        fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bin', 'Vingtile', 90, 'lines+markers')
-if BOT50SHR == True :
-        fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bin', 'Vingtile', 50, 'lines+markers')
+if UNIT == 'Share of Total':
+    if TOP1SHR == True :
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bin', 'Vingtile', 99, 'lines')
+    if TOP10SHR == True :
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Above', 'Vingtile', 90, 'lines+markers')
+    if BOT50SHR == True :
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bottom', 'Vingtile', 50, 'lines+markers')
+if UNIT == 'Dollars' :
+    if GRDTOT == True :
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Above', 'Vingtile', 0, 'lines')
+    if TOP1DOL == True :
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Above', 'Vingtile', 90, 'lines+markers')
+    if BOT50DOL == True :
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Bottom', 'Vingtile', 50, 'lines+markers')
+
 if LINE1 == True :
         fig = addlines(fig, data, PROVS_SELECTED, UNIT, CUST1SHR, CUST1TYPE, CUST1CUT, 'lines+markers')
         if LINE2 == True :
