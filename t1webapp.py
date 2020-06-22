@@ -168,7 +168,7 @@ if UNIT == 'Total Dollars' :
     if GRDTOT == True :
             fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Above', 'Vingtile', 0, PROVS, provcollist, "circle-open", "solid")
     if TOP1DOL == True :
-            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Above', 'Vingtile', 90, PROVS, provcollist, "hexagram", "solid")
+            fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Above', 'Vingtile', 99, PROVS, provcollist, "hexagram", "solid")
     if BOT50DOL == True :
             fig = addlines(fig, data, PROVS_SELECTED, UNIT, 'Below', 'Vingtile', 50, PROVS, provcollist, "bowtie", "solid")
 
@@ -192,10 +192,11 @@ fig.update_layout(
     title = ITEM_SELECTED + ': ' + UNIT + ' For A Certain Percentile Threshold',
     template = "simple_white",
     legend_title_text='',
-    height=800,
+    height=600,
+    width=1000,
     yaxis=dict(rangemode='tozero', showgrid=True, zeroline=True),
     xaxis=dict(showgrid=True),
-    legend=dict(x=0, y=-0.35),
+    legend=dict(x=1, y=0.5),
     hoverlabel=dict(
         font_size=14,
     )
@@ -204,9 +205,9 @@ fig.update_layout(
 fig.layout.images = [dict(
     source="https://raw.githubusercontent.com/h3mps/t1webapp/master/fon-icon.png",
     xref="paper", yref="paper",
-    x=0.8, y=-0.35,
+    x=1, y=0,
     sizex=0.4, sizey=0.4,
-    xanchor="center", yanchor="bottom"
+    xanchor="left", yanchor="bottom"
 )]
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig)
