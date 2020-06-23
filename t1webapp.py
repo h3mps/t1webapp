@@ -150,7 +150,7 @@ def addlines(fig, shr, type, cutoff, marker, dash):
                 # and name sections mainly govern the legend and hover text that appears; this can be formatted and the
                 # last <extra></extra> part is necessary so this stupid translucent part doesn't appear
                 fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines',
-                                         line=dict(color=provcol, dash=dash, width=2),
+                                         line=dict(color=provcol, dash=dash, width=4),
                                          customdata=datalp[['provname', blktype]], name=provabb + ', ' + shr + ' ' + str(cutoff) + ' ' + type,
                                          hovertemplate="Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + UNIT + ": %{y:.4p} <extra></extra>",
                                          hoverlabel=dict(font_color=provfontcol)))
@@ -163,7 +163,7 @@ def addlines(fig, shr, type, cutoff, marker, dash):
         if UNIT == 'Total Dollars':
             if marker == "None" :
                 fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines',
-                                         line=dict(color=provcol, dash=dash, width=2),
+                                         line=dict(color=provcol, dash=dash, width=4),
                                          customdata=datalp[['provname', blktype]], name=provabb + ', ' + shr + ' ' + str(cutoff) + ' ' + type,
                                          hovertemplate="Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + UNIT + ": %{y} <extra></extra>",
                                          hoverlabel=dict(font_color=provfontcol)))
