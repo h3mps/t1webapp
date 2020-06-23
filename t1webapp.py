@@ -6,9 +6,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-st.title('T1 Final Income Statistics')
-
-
 ## st.write('This tool allows users to visualize data on Canadian tax return data created by the Finances of the Nation \
 ## project. Use the widgets below to choose which provinces, items and quintiles you would like to graph. Graphs can \
 ## be download as .png files. ')
@@ -191,7 +188,7 @@ if UNIT == 'Share of Item Total' :
 if UNIT == 'Total Dollars' :
     fig.update_yaxes(title_text=UNIT + ' (infl. adj.)')
 fig.update_layout(
-    title = ITEM_SELECTED + ': ' + UNIT + ' For A Certain Percentile Threshold',
+    title = ITEM_SELECTED + ':<br>' + UNIT,
     template = "simple_white",
     legend_title_text='',
     height=600,
