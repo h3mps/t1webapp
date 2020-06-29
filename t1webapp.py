@@ -18,9 +18,19 @@ df = importdata()
 # Mandatory Input: Item, Provinces and Unit
 # Once selection made, filter data so that it just includes these things
 
+# Category
+CATS = list(df['categorylab'].unique())
+CATS.insert(0, 'All')
+CAT_SELECTED = st.selectbox('Select Category', CATS, index=0)
+if CAT_SELECTED != 'All' :
+    mask_cats = df['categorylab'].isin([CAT_SELECTED])
+    df = df[mask_cats]
+
 # Items
 ITEMS = list(df['item'].unique())
-DEFIND = ITEMS.index("Total Income Assessed")
+DEFIND = 0
+if CAT_SELECTED == 'Total Income Assessed' or CAT_SELECTED == 'All':
+    DEFIND = ITEMS.index("Total Income Assessed")
 ITEM_SELECTED = st.selectbox('Select Item', ITEMS, index=DEFIND)
 mask_items = df['item'].isin([ITEM_SELECTED])
 data = df[mask_items]
@@ -105,7 +115,7 @@ provcollist = ['olive', 'coral', 'lightseagreen', 'gold', 'magenta', 'slategray'
 provfontlist = ['white', 'black', 'white', 'black', 'white', 'white', 'white', 'white', 'black', 'white', 'black']
 
 # Create Figure Function
-def addlines(fig, shr, type, cutoff, marker, dash):
+def addlines(fig, shr, type, cutoff, marker):
     # Name of bin type; need the distinction for legend titles vs. variables names
     global yvarg
     if type == 'Vingtile':
@@ -145,34 +155,20 @@ def addlines(fig, shr, type, cutoff, marker, dash):
             # I want to have enough styles of lines, and so I've made the common measures have unique markers on a
             # solid line, which requires a slightly different template (cannot do marker = "None"); while custom lines
             # have different line style, but no markers -> it's visually more distinct and therefore appealing
-            if marker == "None" :
-                # add_trace adds the lines, the x var is the year, the y var is chosen above in yvarg; The custom data
-                # and name sections mainly govern the legend and hover text that appears; this can be formatted and the
-                # last <extra></extra> part is necessary so this stupid translucent part doesn't appear
-                fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines',
-                                         line=dict(color=provcol, dash=dash, width=4),
-                                         customdata=datalp[['provname', blktype]], name=provabb + ', ' + shr + ' ' + str(cutoff) + ' ' + type,
-                                         hovertemplate="Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + UNIT + ": %{y:.4p} <extra></extra>",
-                                         hoverlabel=dict(font_color=provfontcol)))
-            if marker != "None" :
-                fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines+markers',
-                                     line=dict(color=provcol, width=1), marker=dict(symbol=marker, size=8),
-                                     customdata=datalp[['provname', blktype]], name= provabb +', '+ shr + ' ' + str(cutoff) + ' ' + type,
-                                     hovertemplate = "Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + UNIT +": %{y:.4p} <extra></extra>",
-                                     hoverlabel=dict(font_color=provfontcol)))
+            # add_trace adds the lines, the x var is the year, the y var is chosen above in yvarg; The custom data
+            # and name sections mainly govern the legend and hover text that appears; this can be formatted and the
+            # last <extra></extra> part is necessary so this stupid translucent part doesn't appear
+            fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines+markers',
+                                 line=dict(color=provcol, width=1), marker=dict(symbol=marker, size=8),
+                                 customdata=datalp[['provname', blktype]], name= provabb +', '+ shr + ' ' + str(cutoff) + ' ' + type,
+                                 hovertemplate = "Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + UNIT +": %{y:.4p} <extra></extra>",
+                                 hoverlabel=dict(font_color=provfontcol)))
         if UNIT == 'Total Dollars':
-            if marker == "None" :
-                fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines',
-                                         line=dict(color=provcol, dash=dash, width=4),
-                                         customdata=datalp[['provname', blktype]], name=provabb + ', ' + shr + ' ' + str(cutoff) + ' ' + type,
-                                         hovertemplate="Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + UNIT + ": %{y} <extra></extra>",
-                                         hoverlabel=dict(font_color=provfontcol)))
-            if marker != "None" :
-                fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines+markers',
-                                     line=dict(color=provcol, width=1), marker=dict(symbol=marker, size=8),
-                                     customdata=datalp[['provname', blktype]], name= provabb +', '+ shr + ' ' + str(cutoff) + ' ' + type,
-                                     hovertemplate = "Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + UNIT +": %{y} <extra></extra>",
-                                     hoverlabel=dict(font_color=provfontcol)))
+            fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines+markers',
+                                 line=dict(color=provcol, width=1), marker=dict(symbol=marker, size=8),
+                                 customdata=datalp[['provname', blktype]], name= provabb +', '+ shr + ' ' + str(cutoff) + ' ' + type,
+                                 hovertemplate = "Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + UNIT +": %{y} <extra></extra>",
+                                 hoverlabel=dict(font_color=provfontcol)))
     return fig
 
 # create the figure here
@@ -180,25 +176,25 @@ fig = go.Figure()
 # What is nice about creating the function is that now I can call it with any type of line I want
 if UNIT == 'Share of Item Total':
     if TOP1SHR == True :
-            fig = addlines(fig, 'Bin', 'Vingtile', 99, "circle-open", "solid")
+            fig = addlines(fig, 'Bin', 'Vingtile', 99, "circle-open")
     if TOP10SHR == True :
-            fig = addlines(fig, 'Above', 'Vingtile', 90, "hexagram", "solid")
+            fig = addlines(fig, 'Above', 'Vingtile', 90, "hexagram")
     if BOT50SHR == True :
-            fig = addlines(fig, 'Below', 'Vingtile', 50, "bowtie", "solid")
+            fig = addlines(fig, 'Below', 'Vingtile', 50, "bowtie")
 if UNIT == 'Total Dollars' :
     if GRDTOT == True :
-            fig = addlines(fig, 'Above', 'Vingtile', 0, "circle-open", "solid")
+            fig = addlines(fig, 'Above', 'Vingtile', 0, "circle-open")
     if TOP1DOL == True :
-            fig = addlines(fig, 'Above', 'Vingtile', 99, "hexagram", "solid")
+            fig = addlines(fig, 'Above', 'Vingtile', 99, "hexagram")
     if BOT50DOL == True :
-            fig = addlines(fig, 'Below', 'Vingtile', 50, "bowtie", "solid")
+            fig = addlines(fig, 'Below', 'Vingtile', 50, "bowtie")
 
 if LINE1 == True :
-        fig = addlines(fig, CUST1SHR, CUST1TYPE, CUST1CUT, "None", "dash")
+        fig = addlines(fig, CUST1SHR, CUST1TYPE, CUST1CUT, "diamond-open")
         if LINE2 == True :
-                fig = addlines(fig, CUST2SHR, CUST2TYPE, CUST2CUT, "None", "dot")
+                fig = addlines(fig, CUST2SHR, CUST2TYPE, CUST2CUT, "square")
                 if LINE3 == True :
-                        fig = addlines(fig, CUST3SHR, CUST3TYPE, CUST3CUT, "None", "dashdot")
+                        fig = addlines(fig, CUST3SHR, CUST3TYPE, CUST3CUT, "hourglass")
 
 ############### Part V: Format Figure Layout ###############
 # axes
