@@ -111,8 +111,8 @@ else:
 ############### Part IV: Create Figure ###############
 # Province Color Scheme; Use for setting colors and text colors in the graphs
 # These were meant to correspond to the province identity, so hopefully the order doesn't change much (currently alphabetical)
-provcollist = ['olive', 'coral', 'lightseagreen', 'gold', 'magenta', 'slategray', 'dodgerblue', 'crimson', 'lightsalmon', 'midnightblue', 'goldenrod']
-provfontlist = ['white', 'black', 'white', 'black', 'white', 'white', 'white', 'white', 'black', 'white', 'black']
+provcollist = ['olive', 'red', 'lightseagreen', 'gold', 'magenta', 'slategray', 'dodgerblue', 'firebrick', 'forestgreen', 'midnightblue', 'goldenrod']
+provfontlist = ['white', 'white', 'white', 'black', 'white', 'white', 'white', 'white', 'white', 'white', 'black']
 
 # Create Figure Function
 def addlines(fig, shr, type, cutoff, marker):
