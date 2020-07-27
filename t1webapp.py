@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 @st.cache
 def importdata():
     # store the data somewhere online; there are size limits which can be an issue, but GitHub is a good option
-    return pd.read_csv("https://raw.githubusercontent.com/h3mps/t1webapp/master/t1-fon-data.csv")
+    return pd.read_csv("https://raw.githubusercontent.com/h3mps/t1webapp/master/public_cumulative.csv")
 
 # call function to import the data
 df = importdata()
@@ -19,17 +19,17 @@ df = importdata()
 # Once selection made, filter data so that it just includes these things
 
 # Category
-CATS = list(df['categorylab'].unique())
+CATS = list(df['category'].unique())
 CATS.insert(0, 'All')
 CAT_SELECTED = st.selectbox('Select Category', CATS, index=0)
 if CAT_SELECTED != 'All' :
-    mask_cats = df['categorylab'].isin([CAT_SELECTED])
+    mask_cats = df['category'].isin([CAT_SELECTED])
     df = df[mask_cats]
 
 # Items
 ITEMS = list(df['item'].unique())
 DEFIND = 0
-if CAT_SELECTED == 'Total Income Assessed' or CAT_SELECTED == 'All':
+if CAT_SELECTED == 'Totals' or CAT_SELECTED == 'All':
     DEFIND = ITEMS.index("Total Income Assessed")
 ITEM_SELECTED = st.selectbox('Select Item', ITEMS, index=DEFIND)
 mask_items = df['item'].isin([ITEM_SELECTED])
@@ -38,68 +38,59 @@ data = df[mask_items]
 # Provinces
 PROVS = list(data['provname'].unique())
 PROVABBS = list(data['provabb'].unique())
-PROVS_SELECTED = st.multiselect('Select Provinces', PROVS, default=["All Provinces"])
+PROVS_SELECTED = st.multiselect('Select Provinces', PROVS, default=["All provinces"])
 mask_provs = data['provname'].isin(PROVS_SELECTED)
 data = data[mask_provs]
 
-UNIT = st.sidebar.radio(
+# Unit
+UNIT = st.radio(
     'Variable of Interest',
-    ('Share of Item Total', 'Total Dollars'))
+    ('Share of Item', 'Total Real 2019 Dollars', 'Average Real 2019 Dollars Per Taxfiler'))
 
-############### Part III: Optional Input ###############
-# Optional Input: Choose at least one of these to make a graph, but not all required
-# Common Measures: Give the option to choose pre-filled options that might be of interest; differs for shares vs. dollar
-# Use sidebar feature to put it in a sidebar; Set default values for a couple things so that something shows up
+if UNIT == 'Share of Item':
+    unitvar = 'shr'
+    keepvar = ['shr']
+if UNIT == 'Total Real 2019 Dollars':
+    unitvar = 'realdol'
+    keepvar = ['realdol']
+if UNIT == 'Average Real 2019 Dollars Per Taxfiler':
+    unitvar = 'avgrealdol'
+    keepvar = ['realdol', 'avgrealdol']
 
+# Percentiles
+# Common Measures: Some Pre-Filled Percentile Ranges
 st.sidebar.markdown('**Common Measures**')
-if UNIT == 'Share of Item Total':
-    TOP1SHR = st.sidebar.checkbox('Top 1% Share', value=True)
-    TOP10SHR = st.sidebar.checkbox('Top 10% Share')
-    BOT50SHR = st.sidebar.checkbox('Bottom 50% Share')
-if UNIT == 'Total Dollars':
-    GRDTOT = st.sidebar.checkbox('Grand Total', value=True)
-    TOP1DOL = st.sidebar.checkbox('Top 1% Dollars')
-    BOT50DOL = st.sidebar.checkbox('Bottom 50% Dollars')
+if UNIT == 'Share of Item':
+    COM1 = st.sidebar.checkbox('Top 1% Share', value=True, key=unitvar + '1')
+    COM2 = st.sidebar.checkbox('95%-99% Share', key=unitvar + '2')
+    COM3 = st.sidebar.checkbox('Bottom 50% Share', key=unitvar + '3')
+if UNIT == 'Total Real 2019 Dollars':
+    COM1 = st.sidebar.checkbox('Top 1% Dollars', key=unitvar + '1')
+    COM2 = st.sidebar.checkbox('Grand Total', value=True, key=unitvar + '2')
+    COM3 = st.sidebar.checkbox('Bottom 50% Dollars', key=unitvar + '3')
+if UNIT == 'Average Real 2019 Dollars Per Taxfiler':
+    COM1 = st.sidebar.checkbox('Top 1% Average Dollars', key=unitvar + '1')
+    COM2 = st.sidebar.checkbox('All Taxfilers Average Dollars', value=True, key=unitvar + '2')
+    COM3 = st.sidebar.checkbox('Bottom 50% Average Dollars', key=unitvar + '3')
 
 # Custom Lines: Allow people to add their own custom lines
 st.sidebar.markdown('**Add Custom Lines**')
 # Function to Display the Submenu
-def submenu(data, i):
-    # Option #1: Choose whether above, below or bin
-    CUSTSHR = st.sidebar.radio(
-        "Bin Direction",
-        ('Bin', 'Above', 'Below'), key='linedirect' + i)
-        # need key to ensure that radio's that repeat can be distinguished by the key
-    # Option #2: Choose whether vingtile or quintile
-    CUSTTYPE = st.sidebar.radio(
-        "Bin Type",
-        ('Vingtile', 'Quintile'), key='linetype' + i)
-    # Depending on this type, we can set the default bin values (top values)
-    if CUSTTYPE == 'Vingtile':
-        bintype = "pce"
-        bindefault = 99
-    else:
-        bintype = "quintile"
-        bindefault = 5
-    # Option #3: Choose vingtile/percentile
-    data = data[data[bintype].notnull()]
-    BINS = list(data[bintype].unique())
-    # Was showing up as a float, but int looks better
-    BINS = [int(x) for x in BINS]
-    bindefind = BINS.index(bindefault)
-    CUSTCUT = st.sidebar.selectbox('Select Bin', BINS, index=bindefind, key='lineselect' + i)
-    return CUSTSHR, CUSTTYPE, CUSTCUT
+def submenu(i):
+    # Choose Percentiles From Slider
+    slidevals = st.sidebar.slider('Percentile Range', 0, 100, (20, 80), 5, key='slider' + i)
 
+    return slidevals
 
 # Display Submenus as conditional statements, where 2 only shows up if 1 selected
 if st.sidebar.checkbox('Add Custom Line 1'):
-    CUST1SHR, CUST1TYPE, CUST1CUT = submenu(data, '1')
+    PERCS1 = submenu('1')
     LINE1 = True
     if st.sidebar.checkbox('Add Custom Line 2'):
-        CUST2SHR, CUST2TYPE, CUST2CUT = submenu(data, '2')
+        PERCS2 = submenu('2')
         LINE2 = True
         if st.sidebar.checkbox('Add Custom Line 3'):
-            CUST3SHR, CUST3TYPE, CUST3CUT = submenu(data, '3')
+            PERCS3 = submenu('3')
             LINE3 = True
         else:
             LINE3 = False
@@ -108,38 +99,14 @@ if st.sidebar.checkbox('Add Custom Line 1'):
 else:
     LINE1 = False
 
-############### Part IV: Create Figure ###############
+############### Part III: Graphing Function ###############
 # Province Color Scheme; Use for setting colors and text colors in the graphs
 # These were meant to correspond to the province identity, so hopefully the order doesn't change much (currently alphabetical)
 provcollist = ['olive', 'red', 'lightseagreen', 'gold', 'magenta', 'slategray', 'dodgerblue', 'firebrick', 'forestgreen', 'midnightblue', 'goldenrod']
 provfontlist = ['white', 'white', 'white', 'black', 'white', 'white', 'white', 'white', 'white', 'white', 'black']
 
 # Create Figure Function
-def addlines(fig, shr, type, cutoff, marker):
-    # Name of bin type; need the distinction for legend titles vs. variables names
-    global yvarg
-    if type == 'Vingtile':
-        blktype = "pce"
-    else:
-        blktype = "quintile"
-    # determine y variable to use based on unit and shr choice (6 options)
-    if UNIT == 'Share of Item Total':
-        if shr == 'Bin':
-            yvarg = "binshr"
-        if shr == 'Above':
-            yvarg = "ipoltshr"
-        if shr == 'Below':
-            yvarg = "ipolshr"
-    if UNIT == 'Total Dollars':
-        if shr == 'Bin':
-            yvarg = "implrealbindol"
-        if shr == 'Above':
-            yvarg = "implrealtshrdol"
-        if shr == 'Below':
-            yvarg = "implrealshrdol"
-    # Filter the data to only include what is desired
-    mask_cut = data[blktype].isin([cutoff])
-    datafigloop = data[mask_cut]
+def addlines(fig, datal, perc1, perc2, marker):
     # Loop through the provinces selected and make a graph for each
     for p in PROVS_SELECTED:
         # Find the index of the province in the list and assign the desired colors and abbreviation to it
@@ -148,61 +115,94 @@ def addlines(fig, shr, type, cutoff, marker):
         provfontcol = provfontlist[colindx]
         provabb = PROVABBS[colindx]
         # Filter the data to only include this province
-        datalp = datafigloop[datafigloop['provname'].isin([p])]
+        datalp = datal[datal['provname'].isin([p])]
         # I distinguish between the units here because I want to format the hover text differently for each (% vs. M/B/T)
-        # This could be eliminated easily
-        if UNIT == 'Share of Item Total':
-            # I want to have enough styles of lines, and so I've made the common measures have unique markers on a
-            # solid line, which requires a slightly different template (cannot do marker = "None"); while custom lines
-            # have different line style, but no markers -> it's visually more distinct and therefore appealing
-            # add_trace adds the lines, the x var is the year, the y var is chosen above in yvarg; The custom data
+        if UNIT == 'Share of Item':
+            # add_trace adds the lines, the x var is the year, the y var is chosen when the function is called; The custom data
             # and name sections mainly govern the legend and hover text that appears; this can be formatted and the
             # last <extra></extra> part is necessary so this stupid translucent part doesn't appear
-            fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines+markers',
+            fig.add_trace(go.Scatter(x=datalp['date'], y=datalp['yvar'], mode='lines+markers',
                                  line=dict(color=provcol, width=1), marker=dict(symbol=marker, size=8),
-                                 customdata=datalp[['provname', blktype]], name= provabb +', '+ shr + ' ' + str(cutoff) + ' ' + type,
-                                 hovertemplate = "Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + UNIT +": %{y:.4p} <extra></extra>",
+                                 customdata=datalp[['provname']], name= provabb + ', ' + str(perc1) + 'th-' + str(perc2) + 'th',
+                                 hovertemplate = "Prov: %{customdata[0]} <br>Range: " + str(perc1) + "th-" + str(perc2) + "th Percentiles <br>Year: %{x} <br>" + UNIT + ": %{y:.4p} <extra></extra>",
                                  hoverlabel=dict(font_color=provfontcol)))
-        if UNIT == 'Total Dollars':
-            fig.add_trace(go.Scatter(x=datalp['year'], y=datalp[yvarg], mode='lines+markers',
+        if UNIT == 'Total Real 2019 Dollars' or UNIT == 'Average Real 2019 Dollars Per Taxfiler':
+            fig.add_trace(go.Scatter(x=datalp['date'], y=datalp['yvar'], mode='lines+markers',
                                  line=dict(color=provcol, width=1), marker=dict(symbol=marker, size=8),
-                                 customdata=datalp[['provname', blktype]], name= provabb +', '+ shr + ' ' + str(cutoff) + ' ' + type,
-                                 hovertemplate = "Prov: %{customdata[0]} <br>" + shr + ' ' + type + ": %{customdata[1]} <br>Year: %{x} <br>" + UNIT +": %{y} <extra></extra>",
+                                 customdata=datalp[['provname']], name= provabb + ', ' + str(perc1) + 'th-' + str(perc2) + 'th',
+                                 hovertemplate = "Prov: %{customdata[0]} <br>Range: " + str(perc1) + "th-" + str(perc2) + "th Percentiles <br>Year: %{x} <br>" + UNIT + ": %{y} <extra></extra>",
                                  hoverlabel=dict(font_color=provfontcol)))
     return fig
+
+############### Part IV: Create Figure ###############
+
+# Add Top 100
+top0 = data[data['pce'] == 0].copy()
+top0.loc[:, 'pce'] = 100
+top0.loc[:, 'shr'] = 0
+top0.loc[:, 'realdol'] = 0
+top0.loc[:, 'avgrealdol'] = 0
+data = data.append(top0)
+
+# Reshape Data
+index_cols = ['provname', 'date', 'item', 'provabb']
+cols_to_keep = index_cols + ['pce'] + keepvar
+data = data[cols_to_keep]
+data_piv = data.pivot_table(index=index_cols, columns='pce', values=keepvar)
+data_piv = data_piv.reset_index()
+
+def filteryvar(dataprep, unitv, percs1, percs2):
+    if unitv == 'shr':
+        dataprep['yvar'] = (dataprep.shr[percs1] - dataprep.shr[percs2])
+    if unitv == 'realdol':
+        dataprep['yvar'] = (dataprep.realdol[percs1] - dataprep.realdol[percs2])
+    if unitv == 'avgrealdol':
+        dataprep['pop1'] = dataprep.realdol[percs1]/dataprep.avgrealdol[percs1]
+        if percs2 == 100:
+            dataprep['pop2'] = 0
+        else:
+            dataprep['pop2'] = dataprep.realdol[percs2]/dataprep.avgrealdol[percs2]
+        dataprep['yvar'] = (dataprep.realdol[percs1] - dataprep.realdol[percs2])/(dataprep['pop1'] - dataprep['pop2'])
+
+    return dataprep
 
 # create the figure here
 fig = go.Figure()
 # What is nice about creating the function is that now I can call it with any type of line I want
-if UNIT == 'Share of Item Total':
-    if TOP1SHR == True :
-            fig = addlines(fig, 'Bin', 'Vingtile', 99, "circle-open")
-    if TOP10SHR == True :
-            fig = addlines(fig, 'Above', 'Vingtile', 90, "hexagram")
-    if BOT50SHR == True :
-            fig = addlines(fig, 'Below', 'Vingtile', 50, "bowtie")
-if UNIT == 'Total Dollars' :
-    if GRDTOT == True :
-            fig = addlines(fig, 'Above', 'Vingtile', 0, "circle-open")
-    if TOP1DOL == True :
-            fig = addlines(fig, 'Above', 'Vingtile', 99, "hexagram")
-    if BOT50DOL == True :
-            fig = addlines(fig, 'Below', 'Vingtile', 50, "bowtie")
+
+if COM1 == True:
+    dataprepc1 = filteryvar(data_piv, unitvar, 99, 100)
+    fig = addlines(fig, dataprepc1, 99, 100, "circle-open")
+
+if COM2 == True:
+    if UNIT == 'Share of Item':
+        lbound = 95
+        ubound = 99
+    else:
+        lbound = 0
+        ubound = 100
+
+    dataprepc2 = filteryvar(data_piv, unitvar, lbound, ubound)
+    fig = addlines(fig, dataprepc2, lbound, ubound, "hexagram")
+
+if COM3 == True:
+    dataprepc3 = filteryvar(data_piv, unitvar, 0, 50)
+    fig = addlines(fig, dataprepc3, 0, 50, "bowtie")
 
 if LINE1 == True :
-        fig = addlines(fig, CUST1SHR, CUST1TYPE, CUST1CUT, "diamond-open")
+        dataprep1 = filteryvar(data_piv, unitvar, PERCS1[0], PERCS1[1])
+        fig = addlines(fig, dataprep1, PERCS1[0], PERCS1[1], "diamond-open")
         if LINE2 == True :
-                fig = addlines(fig, CUST2SHR, CUST2TYPE, CUST2CUT, "square")
+                dataprep2 = filteryvar(data_piv, unitvar, PERCS2[0], PERCS2[1])
+                fig = addlines(fig, dataprep2, PERCS2[0], PERCS2[1], "square")
                 if LINE3 == True :
-                        fig = addlines(fig, CUST3SHR, CUST3TYPE, CUST3CUT, "hourglass")
+                        dataprep3 = filteryvar(data_piv, unitvar, PERCS3[0], PERCS3[1])
+                        fig = addlines(fig, dataprep3, PERCS3[0], PERCS3[1], "hourglass")
 
 ############### Part V: Format Figure Layout ###############
 # axes
 fig.update_xaxes(title_text='Year')
-if UNIT == 'Share of Item Total' :
-    fig.update_yaxes(title_text=UNIT)
-if UNIT == 'Total Dollars' :
-    fig.update_yaxes(title_text=UNIT + ' (infl. adj.)')
+fig.update_yaxes(title_text=UNIT)
 
 # elements of figure: title, template, grid, size
 fig.update_layout(
@@ -222,7 +222,7 @@ fig.update_layout(
 
 # add FON logo
 fig.layout.images = [dict(
-    source="https://raw.githubusercontent.com/h3mps/t1webapp/master/fon-icon.png",
+    source="https://raw.githubusercontent.com/h3mps/t1webapp/master/FON_ICON_blue.png",
     xref="paper", yref="paper",
     x=1, y=0,
     sizex=0.25, sizey=0.25,
